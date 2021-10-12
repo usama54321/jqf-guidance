@@ -53,15 +53,10 @@ import java.nio.ByteBuffer;
 public class TfGuidance extends ZestGuidance implements Guidance
 {
     File inputDirectory;
-
-    int currentFileIndex;
-
-    File[] directoryFiles;
-
     RecordReaderDataSetIterator iterator;
     ByteBuffer buffer;
+    INDArray data;
 
-    INDArray temp;
     public class ByteBufferBackedInputStream extends InputStream {
 
         int index;
@@ -69,35 +64,23 @@ public class TfGuidance extends ZestGuidance implements Guidance
 
         public ByteBufferBackedInputStream(INDArray buf) {
             this.data = buf.ravel().permute(0, 2, 3, 1).ravel();
-            //System.out.println(this.data);
-            //this.data = buf;
             index = 0;
         }
 
         public int read() throws IOException {
+            assert(false);
             return 220;
-        }
-
-        public int available() {
-            return 999999;
-        }
-
-        public void close() {
-
         }
 
         public int read(byte[] bytes, int off, int len)
                 throws IOException {
-                //System.out.println(index);
-                //int data = this.data.getInt(0, 0, 0, 0);
+                //@TODO fixme
                 assert(len == 4);
 
                 int data = this.data.getInt(index++);
-                //
-                //System.out.println(index);
-                //System.out.println(data);
-                //@TODO fixme this is stupid
+
                 byte[] arr = ByteBuffer.allocate(4).putInt(data).array();
+
                 for (int i = 0; i < 4; i++) {
                     bytes[i] = arr[i];
                 }
@@ -111,89 +94,25 @@ public class TfGuidance extends ZestGuidance implements Guidance
     public TfGuidance(String testName, Duration duration, Long trials, File outputDirectory, File inputDirectory, Random sourceOfRandomness) throws IOException {
         super(testName, duration, trials, outputDirectory, inputDirectory, sourceOfRandomness);
         System.setProperty("jqf.ei.MAX_INPUT_SIZE", "999999999");
-        temp = null;
+        data = null;
         this.inputDirectory = inputDirectory;
-        this.currentFileIndex = 0;
 
-        this.directoryFiles = this.inputDirectory.listFiles();
-        sourceOfRandomness.nextInt();
-       // Transform t = new Transform(sourceOfRandomness);
+        //Transform t = new Transform(sourceOfRandomness);
 
-        //LFWLoader.SUB_NUM_IMAGES
         iterator = new LFWDataSetIterator(LFWLoader.SUB_NUM_IMAGES, LFWLoader.SUB_NUM_IMAGES, new int[]{256,256,3}, LFWLoader.SUB_NUM_LABELS, false, new ParentPathLabelGenerator(), true, 1, null, sourceOfRandomness);
-        //buffer = getNextBuffer();
     }
 
-    /*
-    public class RandomInputStream extends InputStream {
-
-    private Random generator = new Random();
-    private boolean closed = false;
-
-    @Override
-    public int read() throws IOException {
-        checkOpen();
-        int result = generator.nextInt() % 256;
-        if (result < 0) {
-            result = -result;
-        }
-        return result;
-    }
-
-    @Override
-    public int read(byte[] data, int offset, int length) throws IOException {
-        checkOpen();
-        byte[] temp = new byte[length];
-        generator.nextBytes(temp);
-        System.arraycopy(temp, 0, data, offset, length);
-        return length;
-
-    }
-
-    @Override
-    public int read(byte[] data) throws IOException {
-        checkOpen();
-        generator.nextBytes(data);
-        return data.length;
-
-    }
-
-    @Override
-    public long skip(long bytesToSkip) throws IOException {
-        checkOpen();
-        // It's all random so skipping has no effect.
-        return bytesToSkip;
-    }
-
-    @Override
-    public void close() {
-        this.closed = true;
-    }
-
-    private void checkOpen() throws IOException {
-        if (closed) {
-            throw new IOException("Input stream closed");
-        }
-    }
-
-    @Override
-    public int available() {
-        // Limited only by available memory and the size of an array.
-        return Integer.MAX_VALUE;
-    }
-}
-*/
     /**
      * return next file from the directory
      */
     public InputStream getInput() {
-        //runCoverage.clear();
-        //System.out.println("returning input");
+        runCoverage.clear();
 
-        if (temp  == null) {
-            temp = iterator.next().getFeatures();
+        if (data == null) {
+            data = iterator.next().getFeatures();
         }
-        return new ByteBufferBackedInputStream(temp);
+
+        return new ByteBufferBackedInputStream(data);
     }
 
     /**
@@ -324,7 +243,7 @@ public class TfGuidance extends ZestGuidance implements Guidance
     public Consumer<TraceEvent> generateCallBack(Thread thread) {
         return (event) -> {
             //@TODO
-            //runCoverage.handleEvent(event);
+            runCoverage.handleEvent(event);
         };
     }
 }
